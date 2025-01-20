@@ -1,0 +1,14 @@
+.app-container {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    background-color: #000;
+  }
+  
+  .error-message {
+    color: red;
+    text-align: center;
+    padding: 20px;
+    font-size: 1.2rem;
+  }

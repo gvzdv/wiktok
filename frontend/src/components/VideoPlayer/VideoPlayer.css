@@ -1,0 +1,63 @@
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .video-player {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .controls-overlay {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 20;
+  }
+  
+  .mute-button {
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .mute-button:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+  }
+  
+  .subtitle-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    padding: 0 20px;
+    z-index: 10;
+    width: 100%;
+  }
+  
+  .subtitle-text {
+    color: white;
+    font-size: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 20px 30px;
+    border-radius: 8px;
+    display: inline-block;
+    max-width: 80%;
+    margin: 0 auto;
+    line-height: 1.4;
+  }
