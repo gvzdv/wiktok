@@ -21,7 +21,7 @@ function App() {
         setLoading(true);
         console.log('Loading initial content...');
         
-        // Load first piece
+        // Load first piece using the imported service
         const firstContent = await getNextContent();
         if (!mounted) return;
         

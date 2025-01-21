@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import './VideoPlayer.css';
+import { API_BASE_URL } from '../../config';
 
 export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
   const videoRef = useRef(null);
@@ -71,8 +72,13 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
   useEffect(() => {
     if (audioRef.current && videoData.chunks[currentChunkIndex]) {
       const audioUrl = videoData.chunks[currentChunkIndex].audioUrl;
-      console.log('Loading audio URL:', audioUrl);
-      audioRef.current.src = audioUrl;
+      // Ensure audioUrl is absolute
+      const fullAudioUrl = audioUrl.startsWith('http') 
+        ? audioUrl 
+        : `${API_BASE_URL}${audioUrl}`;
+      
+      console.log('Loading audio URL:', fullAudioUrl);
+      audioRef.current.src = fullAudioUrl;
       
       if (!isMuted) {
         audioRef.current.play().catch(err => {
@@ -131,6 +137,27 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
           </p>
         )}
       </div>
+
+      {videoData.articleUrl && (
+        <div className="article-link-container">
+          <a 
+            href={videoData.articleUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="article-link"
+          >
+            Read on Wikipedia: {videoData.title}
+          </a>
+          <a 
+            href="https://www.linkedin.com/in/mike-gvozdev/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="article-link"
+          >
+            Say hi to the creator
+          </a>
+        </div>
+      )}
     </div>
   );
 }

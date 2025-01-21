@@ -15,7 +15,7 @@
     position: absolute;
     bottom: 20px;
     right: 20px;
-    z-index: 20;
+    z-index: 30;
   }
   
   .mute-button {
@@ -60,4 +60,30 @@
     max-width: 80%;
     margin: 0 auto;
     line-height: 1.4;
+  }
+  
+  .article-link-container {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    text-align: center;
+  }
+  
+  .article-link {
+    display: inline-block;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+  }
+  
+  .article-link:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transform: scale(1.05);
   }

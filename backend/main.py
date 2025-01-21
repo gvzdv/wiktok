@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import os
 import random
 import wikipedia
-
+from prompt import PROMPT
 load_dotenv()
 
 app = FastAPI()
@@ -17,7 +17,7 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React app's address
+    allow_origins=["http://localhost:3000", "https://wiktok-398449484807.us-central1.run.app"],
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -28,6 +28,13 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Base URL for static files
 base_url = "http://localhost:8000"
 
+VIDEOS = []
+video_dir = "static/video"
+
+for file in os.listdir(video_dir):
+    if file.endswith(('.mp4', '.webm', '.mov')):
+        VIDEOS.append(f"/static/video/{file}")
+
 # Get LLM API key
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
@@ -37,7 +44,7 @@ def get_next_content():
     video_url = select_random_video()
 
     # 2) Fetch random Wikipedia article
-    title, text = get_random_wikipedia_article()
+    title, text, article_url = get_random_wikipedia_article()
 
     # 3) Summarize with GPT-4
     summary = gpt4_summarize(text)
@@ -52,6 +59,8 @@ def get_next_content():
     # 5) Return data for front-end
     response = {
         "videoUrl": base_url + video_url,
+        "articleUrl": article_url,
+        "title": title,
         "chunks": [
             {"text": chunk, "audioUrl": base_url + audio_url}
             for chunk, audio_url in zip(chunks, audio_files)
@@ -61,10 +70,8 @@ def get_next_content():
     print(response)
     return response
 
-
 def select_random_video():
-    videos = ["/static/video/Skytrain.mp4"]
-    return random.choice(videos)
+    return random.choice(VIDEOS)
 
 
 def get_random_wikipedia_article():
@@ -89,9 +96,14 @@ def get_random_wikipedia_article():
             page = wikipedia.page(pageid=id)
             title = page.title
             text = page.content
-            print(title)
+            # print(title)
             # print(text)
-            return title, text
+
+            article_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
+            print(f"Selected article: {title}")
+            print(f"Article URL: {article_url}")
+
+            return title, text, article_url
         else:
             get_random_wikipedia_article()
 
@@ -100,13 +112,16 @@ def get_random_wikipedia_article():
 
 
 def gpt4_summarize(full_text):
-    prompt = f"Please summarize the following Wikipedia text in 100 words or less:\n{full_text}"
+    prompt = f"Text to summarize:\n{full_text}"
     # (Truncate to fit token limits if needed)
     client = openai.OpenAI(api_key=DEEPSEEK_API_KEY, base_url="https://api.deepseek.com")
 
     resp = client.chat.completions.create(
         model="deepseek-chat", 
-        messages=[{"role": "user", "content": prompt}], 
+        messages=[
+            {"role": "system", "content": PROMPT},
+            {"role": "user", "content": prompt}
+            ], 
         temperature=0.7
     )
     summary = resp.choices[0].message.content
@@ -128,7 +143,7 @@ def generate_tts_for_chunk(chunk):
 
     # Escape special characters for SSML
     escaped_chunk = (
-        chunk.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        chunk.replace("&", "&amp;").replace("<", "&lt;").replace(">", "")
     )
     ssml = f"<speak>{escaped_chunk}</speak>"
 
@@ -142,7 +157,7 @@ def generate_tts_for_chunk(chunk):
 
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.MP3,
-        speaking_rate=1.0,
+        speaking_rate=1.3,
         pitch=0.0,
         volume_gain_db=0.0,
         sample_rate_hertz=24000,
