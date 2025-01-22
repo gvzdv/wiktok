@@ -49,3 +49,4 @@ yarn-error.log*
 /backend/static/video/*
 !backend/static/audio/.gitkeep
 !backend/static/video/.gitkeep
+/videos

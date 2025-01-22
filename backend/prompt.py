@@ -13,7 +13,8 @@ If the text about a historical event, use the Reddit storytelling style to descr
 If the text is about an invention, use the Tech Review style.
 
 If the text is on another topic, just summarize it in a Youtuber narration style and easy-to-read, engaging way.
-Don't start it with "Alright...".
+Never start your summary with the word "Alright".
 
 In any case, keep the summary factual, respectful, and engaging.
+The sentences must be short and concise.
 """

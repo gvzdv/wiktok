@@ -1,14 +1,17 @@
 .app-container {
     width: 100vw;
     height: 100vh;
-    overflow: hidden;
+    overflow-y: scroll;
     position: relative;
     background-color: #000;
-  }
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+}
   
-  .error-message {
+.error-message {
     color: red;
     text-align: center;
     padding: 20px;
     font-size: 1.2rem;
-  }
+}

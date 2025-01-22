@@ -97,7 +97,7 @@ function App() {
           ...currentContent,
           videoUrl: currentContent.videoUrl.startsWith('http') 
             ? currentContent.videoUrl 
-            : `http://localhost:8000/${currentContent.videoUrl}`
+            : `${window.location.origin}${currentContent.videoUrl}`
         }}
         isMuted={isMuted}
         onMuteToggle={setIsMuted}

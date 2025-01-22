@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import openai
 import requests
 import uuid
@@ -23,13 +24,25 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Mount static directories properly
+app.mount("/static/video", StaticFiles(directory="static/video"), name="video")
+app.mount("/static/audio", StaticFiles(directory="static/audio"), name="audio")
+app.mount("/static", StaticFiles(directory="frontend_build/static"), name="static")
 
-# Base URL for static files
-base_url = "http://localhost:8000"
+# Ensure base_url is set correctly
+base_url = ""
+
+# Update video directory path
+video_dir = os.path.join(os.path.dirname(__file__), "static/video")
+if not os.path.exists(video_dir):
+    os.makedirs(video_dir, exist_ok=True)
+
+# Create audio directory if it doesn't exist
+audio_dir = os.path.join(os.path.dirname(__file__), "static/audio")
+if not os.path.exists(audio_dir):
+    os.makedirs(audio_dir, exist_ok=True)
 
 VIDEOS = []
-video_dir = "static/video"
 
 for file in os.listdir(video_dir):
     if file.endswith(('.mp4', '.webm', '.mov')):
@@ -40,34 +53,33 @@ DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
 @app.get("/next-content")
 def get_next_content():
-    # 1) Pick a random video
     video_url = select_random_video()
-
-    # 2) Fetch random Wikipedia article
     title, text, article_url = get_random_wikipedia_article()
-
-    # 3) Summarize with GPT-4
     summary = gpt4_summarize(text)
-
-    # 4) Split into sentence chunks and generate audio for each
     chunks = chunk_text(summary)
     audio_files = []
+    
     for chunk in chunks:
         audio_url = generate_tts_for_chunk(chunk)
+        # Ensure URLs start with /static/
+        if not audio_url.startswith('/static/'):
+            audio_url = f'/static/{audio_url}'
         audio_files.append(audio_url)
 
-    # 5) Return data for front-end
+    # Ensure video URL starts with /static/
+    if not video_url.startswith('/static/'):
+        video_url = f'/static/{video_url}'
+
     response = {
-        "videoUrl": base_url + video_url,
+        "videoUrl": video_url,
         "articleUrl": article_url,
         "title": title,
         "chunks": [
-            {"text": chunk, "audioUrl": base_url + audio_url}
+            {"text": chunk, "audioUrl": audio_url}
             for chunk, audio_url in zip(chunks, audio_files)
         ],
     }
 
-    print(response)
     return response
 
 def select_random_video():
@@ -92,16 +104,18 @@ def get_random_wikipedia_article():
             id = random_page["id"]
             print(id)
 
-            wikipedia.set_lang("en")
-            page = wikipedia.page(pageid=id)
-            title = page.title
-            text = page.content
-            # print(title)
-            # print(text)
-
-            article_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
-            print(f"Selected article: {title}")
-            print(f"Article URL: {article_url}")
+            try:
+                page = wikipedia.page(pageid=id)
+                title = page.title
+                text = page.content
+                article_url = page.url
+                # article_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
+                print(f"Selected article: {title}")
+                print(f"Article URL: {article_url}")
+                print(f"Text: {text}")
+            except wikipedia.exceptions.DisambiguationError as e:
+                print(f"DisambiguationError")
+                get_random_wikipedia_article()
 
             return title, text, article_url
         else:
@@ -143,7 +157,7 @@ def generate_tts_for_chunk(chunk):
 
     # Escape special characters for SSML
     escaped_chunk = (
-        chunk.replace("&", "&amp;").replace("<", "&lt;").replace(">", "")
+        chunk.replace("&", "&amp;").replace("<", "&lt;").replace(">", "").replace("*", "")
     )
     ssml = f"<speak>{escaped_chunk}</speak>"
 
@@ -169,9 +183,6 @@ def generate_tts_for_chunk(chunk):
             input=synthesis_input, voice=voice, audio_config=audio_config
         )
 
-        # Create a static directory for audio files if it doesn't exist
-        os.makedirs("static/audio", exist_ok=True)
-
         # Save audio to static directory with unique filename
         filename = f"static/audio/tts_{uuid.uuid4()}.mp3"
         with open(filename, "wb") as out:
@@ -184,55 +195,42 @@ def generate_tts_for_chunk(chunk):
         raise
 
 
-@app.get("/api/test-tts")
-def test_tts():
-    test_text = "Hello! This is a test of the text-to-speech system. How does it sound?"
-    chunks = chunk_text(test_text)
-    try:
-        audio_files = []
-        for chunk in chunks:
-            audio_url = generate_tts_for_chunk(chunk)
-            audio_files.append(audio_url)
+@app.get("/{full_path:path}")
+async def serve_react(full_path: str):
+    if full_path == "":
+        return FileResponse("frontend_build/index.html")
+    elif os.path.exists(f"frontend_build/{full_path}"):
+        return FileResponse(f"frontend_build/{full_path}")
+    return FileResponse("frontend_build/index.html")
 
-        return {
-            "message": "TTS audio generated successfully",
-            "chunks": [
-                {"text": chunk, "audioUrl": audio_url}
-                for chunk, audio_url in zip(chunks, audio_files)
-            ],
-        }
-    except Exception as e:
-        return {"error": str(e)}, 500
+@app.get("/debug/static-files")
+async def debug_static_files():
+    """Debug endpoint to check static file paths"""
+    video_files = os.listdir(video_dir)
+    audio_files = os.listdir(audio_dir)
+    return {
+        "video_dir": video_dir,
+        "audio_dir": audio_dir,
+        "videos": video_files,
+        "audio": audio_files,
+        "working_dir": os.getcwd(),
+    }
 
+# def test(id = 5289531):
+    
+#     wikipedia.set_lang("en")
+#     print("Starting...")
+#     try:
+#         page = wikipedia.page(pageid=id)
+#         title = page.title
+#         text = page.content
 
-@app.get("/api/test-request")
-def test_request():
-    try:
+#         article_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
+#         print(f"Selected article: {title}")
+#         print(f"Article URL: {article_url}")
+#         print(f"Text: {text}")
+#     except wikipedia.exceptions.DisambiguationError as e:
+#         print(f"DisambiguationError: {e}")
+#         test(id=18630637)
 
-        url = "https://en.wikipedia.org/w/api.php"
-        params = {
-            "action": "query",
-            "format": "json",
-            "list": "random",
-            "rnnamespace": 0,  # Main namespace
-            "rnlimit": 1,  # Get one random page
-        }
-        response = requests.get(url, params=params)
-        data = response.json()
-        if "query" in data and "random" in data["query"]:
-            random_page = data["query"]["random"][0]
-            id = random_page["id"]
-            print(id)
-
-            wikipedia.set_lang("en")
-            page = wikipedia.page(pageid=id)
-            title = page.title
-            text = page.content
-            print(title)
-            print(text)
-            return title, text
-        else:
-            get_random_wikipedia_article()
-
-    except Exception as e:
-        return {"error": str(e)}, 500
+# test()

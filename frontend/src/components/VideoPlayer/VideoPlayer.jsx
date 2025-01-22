@@ -73,13 +73,13 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
     if (audioRef.current && videoData.chunks[currentChunkIndex]) {
       const audioUrl = videoData.chunks[currentChunkIndex].audioUrl;
       // Ensure audioUrl is absolute
-      const fullAudioUrl = audioUrl.startsWith('http') 
-        ? audioUrl 
+      const fullAudioUrl = audioUrl.startsWith('http')
+        ? audioUrl
         : `${API_BASE_URL}${audioUrl}`;
-      
+
       console.log('Loading audio URL:', fullAudioUrl);
       audioRef.current.src = fullAudioUrl;
-      
+
       if (!isMuted) {
         audioRef.current.play().catch(err => {
           console.error('Audio play error:', err);
@@ -104,12 +104,23 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
     }
   };
 
+  const handleVideoError = (error) => {
+    console.error('Video loading error:', error);
+    setError(`Unable to load video. Please try refreshing the page. (${videoData.videoUrl})`);
+  };
+
+  const handleAudioError = (error) => {
+    console.error('Audio loading error:', error);
+    const currentAudioUrl = videoData.chunks[currentChunkIndex]?.audioUrl;
+    setError(`Unable to load audio. Please try refreshing the page. (${currentAudioUrl})`);
+  };
+
   if (!videoData) return null;
 
   return (
     <div className="video-container">
       {error && <div className="error-overlay">{error}</div>}
-      
+
       <video
         ref={videoRef}
         src={videoData.videoUrl}
@@ -117,12 +128,17 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
         loop
         muted
         playsInline
+        onError={handleVideoError}
       />
 
-      <audio ref={audioRef} />
+      <audio
+        ref={audioRef}
+        src={videoData.chunks[currentChunkIndex]?.audioUrl}
+        onError={handleAudioError}
+      />
 
       <div className="controls-overlay">
-        <button 
+        <button
           className="mute-button"
           onClick={handleToggleMute}
         >
@@ -140,18 +156,18 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
 
       {videoData.articleUrl && (
         <div className="article-link-container">
-          <a 
-            href={videoData.articleUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
+          <a
+            href={videoData.articleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="article-link"
           >
             Read on Wikipedia: {videoData.title}
           </a>
-          <a 
-            href="https://www.linkedin.com/in/mike-gvozdev/" 
-            target="_blank" 
-            rel="noopener noreferrer" 
+          <a
+            href="https://www.linkedin.com/in/mike-gvozdev/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="article-link"
           >
             Say hi to the creator
