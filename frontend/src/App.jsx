@@ -6,25 +6,6 @@ import './App.css';
 
 const API_BASE_URL = 'https://wiktok-398449484807.us-central1.run.app/';
 
-// function useSwipeUp(callback, threshold = 50) {
-//   const startYRef = React.useRef(null);
-
-//   const onTouchStart = React.useCallback(e => {
-//     startYRef.current = e.touches[0].clientY;
-//   }, []);
-
-//   const onTouchEnd = React.useCallback(e => {
-//     if (startYRef.current == null) return;
-//     const endY = e.changedTouches[0].clientY;
-//     if (startYRef.current - endY > threshold) {
-//       callback();
-//     }
-//     startYRef.current = null;
-//   }, [callback, threshold]);
-
-//   return { onTouchStart, onTouchEnd };
-// }
-
 function App() {
   const [contentList, setContentList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -111,24 +92,6 @@ function App() {
     ? currentContent.videoUrl
     : `${API_BASE_URL}${currentContent.videoUrl.startsWith('/') ? '' : '/'}${currentContent.videoUrl}`;
 
-
-  // Top-level Hook (no conditionals!)
-  // // Top-level Hook (no conditionals!)
-  // const [touchStartY, setTouchStartY] = useState(null);
-
-  // const handleTouchStart = (e) => {
-  //   setTouchStartY(e.touches[0].clientY);
-  // };
-
-  // const handleTouchEnd = (e) => {
-  //   if (touchStartY == null) return;
-  //   const touchEndY = e.changedTouches[0].clientY;
-  //   if (touchStartY - touchEndY > 50) {
-  //     handleNext();
-  //   }
-  //   setTouchStartY(null);
-  // };
-
   const handleTouchStart = e => setTouchStartY(e.touches[0].clientY);
   const handleTouchEnd = e => {
     if (touchStartY === null) return;
@@ -144,9 +107,9 @@ function App() {
       className="app-container"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      // onWheel={(e) => {
-      //   if (e.deltaY > 0) handleNext();
-      // }}
+      onWheel={(e) => {
+        if (e.deltaY > 0) handleNext();
+      }}
     >
       <VideoPlayer
         key={currentIndex}
