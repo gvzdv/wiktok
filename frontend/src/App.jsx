@@ -6,6 +6,25 @@ import './App.css';
 
 const API_BASE_URL = 'https://wiktok-398449484807.us-central1.run.app/';
 
+// function useSwipeUp(callback, threshold = 50) {
+//   const startYRef = React.useRef(null);
+
+//   const onTouchStart = React.useCallback(e => {
+//     startYRef.current = e.touches[0].clientY;
+//   }, []);
+
+//   const onTouchEnd = React.useCallback(e => {
+//     if (startYRef.current == null) return;
+//     const endY = e.changedTouches[0].clientY;
+//     if (startYRef.current - endY > threshold) {
+//       callback();
+//     }
+//     startYRef.current = null;
+//   }, [callback, threshold]);
+
+//   return { onTouchStart, onTouchEnd };
+// }
+
 function App() {
   const [contentList, setContentList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -13,6 +32,8 @@ function App() {
   const [error, setError] = useState(null);
   const [isLoadingNext, setIsLoadingNext] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+
+  const [touchStartY, setTouchStartY] = useState(null);
 
   // Load initial content only once
   useEffect(() => {
@@ -22,11 +43,11 @@ function App() {
       try {
         setLoading(true);
         console.log('Loading initial content...');
-        
+
         // Load first piece using the imported service
         const firstContent = await getNextContent();
         if (!mounted) return;
-        
+
         // Load second piece
         const secondContent = await getNextContent();
         if (!mounted) return;
@@ -54,7 +75,7 @@ function App() {
   // Preload next content
   const preloadNextContent = useCallback(async () => {
     if (isLoadingNext) return;
-    
+
     try {
       setIsLoadingNext(true);
       console.log('Preloading next content...');
@@ -71,7 +92,7 @@ function App() {
   const handleNext = useCallback(() => {
     if (currentIndex < contentList.length - 1) {
       setCurrentIndex(prev => prev + 1);
-      
+
       // If we're showing the second-to-last item, load the next one
       if (currentIndex === contentList.length - 2) {
         preloadNextContent();
@@ -86,18 +107,48 @@ function App() {
   const currentContent = contentList[currentIndex];
   console.log('Rendering content:', currentContent);
 
-  const videoUrl = currentContent.videoUrl.startsWith('http') 
-    ? currentContent.videoUrl 
+  const videoUrl = currentContent.videoUrl.startsWith('http')
+    ? currentContent.videoUrl
     : `${API_BASE_URL}${currentContent.videoUrl.startsWith('/') ? '' : '/'}${currentContent.videoUrl}`;
 
+
+  // Top-level Hook (no conditionals!)
+  // // Top-level Hook (no conditionals!)
+  // const [touchStartY, setTouchStartY] = useState(null);
+
+  // const handleTouchStart = (e) => {
+  //   setTouchStartY(e.touches[0].clientY);
+  // };
+
+  // const handleTouchEnd = (e) => {
+  //   if (touchStartY == null) return;
+  //   const touchEndY = e.changedTouches[0].clientY;
+  //   if (touchStartY - touchEndY > 50) {
+  //     handleNext();
+  //   }
+  //   setTouchStartY(null);
+  // };
+
+  const handleTouchStart = e => setTouchStartY(e.touches[0].clientY);
+  const handleTouchEnd = e => {
+    if (touchStartY === null) return;
+    const touchEndY = e.changedTouches[0].clientY;
+    if (touchStartY - touchEndY > 50) {
+      handleNext();
+    }
+    setTouchStartY(null);
+  }; 
+  
   return (
-    <div 
+    <div
       className="app-container"
-      onWheel={(e) => {
-        if (e.deltaY > 0) handleNext();
-      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      // onWheel={(e) => {
+      //   if (e.deltaY > 0) handleNext();
+      // }}
     >
-      <VideoPlayer 
+      <VideoPlayer
         key={currentIndex}
         videoData={{
           ...currentContent,
