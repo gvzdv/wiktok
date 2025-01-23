@@ -4,6 +4,8 @@ import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
 import { getNextContent } from './services/api';
 import './App.css';
 
+const API_BASE_URL = 'https://wiktok-398449484807.us-central1.run.app/';
+
 function App() {
   const [contentList, setContentList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -84,6 +86,10 @@ function App() {
   const currentContent = contentList[currentIndex];
   console.log('Rendering content:', currentContent);
 
+  const videoUrl = currentContent.videoUrl.startsWith('http') 
+    ? currentContent.videoUrl 
+    : `${API_BASE_URL}${currentContent.videoUrl.startsWith('/') ? '' : '/'}${currentContent.videoUrl}`;
+
   return (
     <div 
       className="app-container"
@@ -95,9 +101,7 @@ function App() {
         key={currentIndex}
         videoData={{
           ...currentContent,
-          videoUrl: currentContent.videoUrl.startsWith('http') 
-            ? currentContent.videoUrl 
-            : `${window.location.origin}${currentContent.videoUrl}`
+          videoUrl: videoUrl
         }}
         isMuted={isMuted}
         onMuteToggle={setIsMuted}

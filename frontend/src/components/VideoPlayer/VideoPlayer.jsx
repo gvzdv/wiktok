@@ -19,6 +19,7 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
   // Handle video loading and autoplay
   useEffect(() => {
     const video = videoRef.current;
+    video.defaultMuted = true;
     if (!video) return;
 
     const handleCanPlay = async () => {
@@ -89,6 +90,18 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
     }
   }, [currentChunkIndex, videoData.chunks, isMuted]);
 
+  useEffect(() => {
+    console.log('Video URL:', videoData.videoUrl);
+    console.log('Video element:', videoRef.current);
+    
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener('loadstart', () => console.log('Video loadstart'));
+      video.addEventListener('loadedmetadata', () => console.log('Video loadedmetadata'));
+      video.addEventListener('loadeddata', () => console.log('Video loadeddata'));
+    }
+  }, [videoData.videoUrl]);
+
   const handleToggleMute = async () => {
     try {
       if (isMuted) {
@@ -105,8 +118,17 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
   };
 
   const handleVideoError = (error) => {
-    console.error('Video loading error:', error);
-    setError(`Unable to load video. Please try refreshing the page. (${videoData.videoUrl})`);
+    console.error('Video loading error:', {
+      error,
+      videoUrl: videoData.videoUrl,
+      mediaError: videoRef.current?.error
+    });
+    
+    const errorMessage = videoRef.current?.error?.message 
+      ? `Unable to load video: ${videoRef.current.error.message}`
+      : `Unable to load video. Please try refreshing the page. (${videoData.videoUrl})`;
+      
+    setError(errorMessage);
   };
 
   const handleAudioError = (error) => {
@@ -128,6 +150,11 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
         loop
         muted
         playsInline
+        autoPlay
+        webkit-playsinline="true"
+        x5-playsinline="true"
+        preload="auto"
+        crossOrigin="anonymous"
         onError={handleVideoError}
       />
 

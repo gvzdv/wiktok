@@ -112,10 +112,10 @@ def get_random_wikipedia_article():
                 # article_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
                 print(f"Selected article: {title}")
                 print(f"Article URL: {article_url}")
-                print(f"Text: {text}")
-            except wikipedia.exceptions.DisambiguationError as e:
+                # print(f"Text: {text}")
+            except Exception as e:
                 print(f"DisambiguationError")
-                get_random_wikipedia_article()
+                return get_random_wikipedia_article()
 
             return title, text, article_url
         else:
@@ -140,7 +140,7 @@ def gpt4_summarize(full_text):
     )
     summary = resp.choices[0].message.content
     print(summary)
-    return summary.strip()
+    return summary.strip().replace("*", "")
 
 
 def chunk_text(text):
