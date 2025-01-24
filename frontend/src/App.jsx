@@ -12,6 +12,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLoadingNext, setIsLoadingNext] = useState(false);
+
+  // Start the first video muted by default
   const [isMuted, setIsMuted] = useState(true);
 
   const [touchStartY, setTouchStartY] = useState(null);
@@ -25,11 +27,9 @@ function App() {
         setLoading(true);
         console.log('Loading initial content...');
 
-        // Load first piece using the imported service
         const firstContent = await getNextContent();
         if (!mounted) return;
 
-        // Load second piece
         const secondContent = await getNextContent();
         if (!mounted) return;
 
@@ -51,17 +51,16 @@ function App() {
     return () => {
       mounted = false;
     };
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   // Preload next content
   const preloadNextContent = useCallback(async () => {
     if (isLoadingNext) return;
-
     try {
       setIsLoadingNext(true);
       console.log('Preloading next content...');
       const nextContent = await getNextContent();
-      setContentList(prev => [...prev, nextContent]);
+      setContentList((prev) => [...prev, nextContent]);
     } catch (err) {
       console.error('Error preloading next content:', err);
     } finally {
@@ -69,39 +68,45 @@ function App() {
     }
   }, [isLoadingNext]);
 
-  // Handle sliding to next video
+  // Go to next video, then re-mute so the new video starts muted
   const handleNext = useCallback(() => {
     if (currentIndex < contentList.length - 1) {
-      setCurrentIndex(prev => prev + 1);
+      // <-- Force next video to start muted
+      setIsMuted(true);
+      setCurrentIndex((prev) => prev + 1);
 
-      // If we're showing the second-to-last item, load the next one
+      // If we're on the second-to-last, preload the next
       if (currentIndex === contentList.length - 2) {
         preloadNextContent();
       }
     }
   }, [currentIndex, contentList.length, preloadNextContent]);
 
+  // Basic loading/error states
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="error-message">{error}</div>;
   if (contentList.length === 0) return <div className="error-message">No content available</div>;
 
+  // Current content
   const currentContent = contentList[currentIndex];
   console.log('Rendering content:', currentContent);
 
+  // Ensure the video URL is absolute
   const videoUrl = currentContent.videoUrl.startsWith('http')
     ? currentContent.videoUrl
     : `${API_BASE_URL}${currentContent.videoUrl.startsWith('/') ? '' : '/'}${currentContent.videoUrl}`;
 
-  const handleTouchStart = e => setTouchStartY(e.touches[0].clientY);
-  const handleTouchEnd = e => {
+  // Touch-based swipe
+  const handleTouchStart = (e) => setTouchStartY(e.touches[0].clientY);
+  const handleTouchEnd = (e) => {
     if (touchStartY === null) return;
     const touchEndY = e.changedTouches[0].clientY;
     if (touchStartY - touchEndY > 50) {
       handleNext();
     }
     setTouchStartY(null);
-  }; 
-  
+  };
+
   return (
     <div
       className="app-container"

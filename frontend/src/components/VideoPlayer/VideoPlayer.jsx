@@ -1,34 +1,19 @@
-import React, { useRef, useState, useEffect, useImperativeHandle } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import './VideoPlayer.css';
-// If you have a config file for API_BASE_URL, import it.
-// Otherwise, you can remove this line or define your base URL.
 import { API_BASE_URL } from '../../config';
 
 export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
   const videoRef = useRef(null);
   const audioRef = useRef(null);
 
-  // We'll track the old articleUrl to decide if we should reset.
-  const oldArticleUrlRef = useRef(null);
-
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [error, setError] = useState(null);
 
-  useImperativeHandle(ref, () => ({
-    forcePlay() {
-      if (!isMuted && audioRef.current) {
-        audioRef.current
-          .play()
-          .catch(err => console.error('forcePlay error:', err));
-      }
-    },
-  }));
-
-  // Only reset index if the articleUrl changed:
+  // Only reset index if the articleUrl changes
+  const oldArticleUrlRef = useRef(null);
   useEffect(() => {
     if (!oldArticleUrlRef.current || oldArticleUrlRef.current !== videoData.articleUrl) {
-      // reset to chunk 0 if it's a brand-new article
       setIsVideoLoaded(false);
       setError(null);
       setCurrentChunkIndex(0);
@@ -36,13 +21,12 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
     oldArticleUrlRef.current = videoData.articleUrl;
   }, [videoData]);
 
-  // Autoplay logic
+  // Video autoplay while muted
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Ensure video is muted by default so mobile allows autoplay
-    video.defaultMuted = true;
+    video.defaultMuted = true; // for iOS
 
     const handleCanPlay = async () => {
       console.log('Video can play');
@@ -63,39 +47,37 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
 
     video.addEventListener('canplay', handleCanPlay);
     video.addEventListener('error', handleError);
-
     return () => {
       video.removeEventListener('canplay', handleCanPlay);
       video.removeEventListener('error', handleError);
     };
   }, [videoData.videoUrl]);
 
-  // Move to next chunk (or loop) when current audio ends
+  // Handle audio chunk progression
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     const handleAudioEnd = () => {
       if (currentChunkIndex < videoData.chunks.length - 1) {
-        setCurrentChunkIndex(prev => prev + 1);
+        setCurrentChunkIndex((prev) => prev + 1);
       } else {
-        // If we've hit the last chunk, go back to 0
         setCurrentChunkIndex(0);
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
         }
       }
     };
-
     audio.addEventListener('ended', handleAudioEnd);
     return () => {
       audio.removeEventListener('ended', handleAudioEnd);
     };
   }, [currentChunkIndex, videoData.chunks]);
 
-  // Whenever currentChunkIndex or isMuted changes, load the appropriate audio
+  // Load the current audio chunk
   useEffect(() => {
-    if (!audioRef.current || !videoData.chunks[currentChunkIndex]) return;
+    const audioElement = audioRef.current;
+    if (!audioElement || !videoData.chunks[currentChunkIndex]) return;
 
     let audioUrl = videoData.chunks[currentChunkIndex].audioUrl;
     if (!audioUrl.startsWith('http')) {
@@ -103,25 +85,29 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
     }
 
     console.log('Loading audio URL:', audioUrl);
-    audioRef.current.src = audioUrl;
+    audioElement.src = audioUrl;
 
-    // Only autoplay audio if not muted
+    // Auto-play audio if unmuted
     if (!isMuted) {
-      audioRef.current.play().catch(err => {
+      audioElement.play().catch((err) => {
         console.error('Audio play error:', err);
         setError(`Failed to play audio: ${err.message}`);
       });
     }
   }, [currentChunkIndex, videoData.chunks, isMuted]);
 
-  const handleToggleMute = async () => {
+  // Tapping on the screen toggles mute/unmute
+  const handleScreenTap = async (e) => {
+    // If tap hits a link, let it navigate
+    if (e.target.closest('a')) return;
+
     try {
       if (isMuted) {
-        // if user unmutes, play audio immediately
+        // user unmuting
         await audioRef.current.play();
         onMuteToggle(false);
       } else {
-        // if user mutes, pause audio
+        // user muting
         audioRef.current.pause();
         onMuteToggle(true);
       }
@@ -137,24 +123,23 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
       videoUrl: videoData.videoUrl,
       mediaError: videoRef.current?.error
     });
-
-    const errorMessage = videoRef.current?.error?.message 
-      ? `Unable to load video: ${videoRef.current.error.message}`
-      : `Unable to load video. Please try refreshing the page. (${videoData.videoUrl})`;
-      
+    const msg = videoRef.current?.error?.message;
+    const errorMessage = msg
+      ? `Unable to load video: ${msg}`
+      : `Unable to load video. Please try refreshing. (${videoData.videoUrl})`;
     setError(errorMessage);
   };
 
   const handleAudioError = (error) => {
     console.error('Audio loading error:', error);
     const currentAudioUrl = videoData.chunks[currentChunkIndex]?.audioUrl;
-    setError(`Unable to load audio. Please try refreshing the page. (${currentAudioUrl})`);
+    setError(`Unable to load audio. Please try refreshing. (${currentAudioUrl})`);
   };
 
   if (!videoData) return null;
 
   return (
-    <div className="video-container">
+    <div className="video-container" onClick={handleScreenTap}>
       {error && <div className="error-overlay">{error}</div>}
 
       <video
@@ -172,19 +157,11 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
         onError={handleVideoError}
       />
 
-      <audio
-        ref={audioRef}
-        src={videoData.chunks[currentChunkIndex]?.audioUrl}
-        onError={handleAudioError}
-      />
+      <audio ref={audioRef} onError={handleAudioError} />
 
-      <div className="controls-overlay">
-        <button
-          className="mute-button"
-          onClick={handleToggleMute}
-        >
-          {isMuted ? '🔇' : '🔊'}
-        </button>
+      {/* Small "tap to unmute/mute" notice */}
+      <div className="tap-reminder">
+        Tap anywhere to {isMuted ? 'unmute' : 'mute'}
       </div>
 
       <div className="subtitle-overlay">
