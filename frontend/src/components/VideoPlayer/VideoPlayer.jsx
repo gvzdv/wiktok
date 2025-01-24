@@ -1,26 +1,48 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useImperativeHandle } from 'react';
 import './VideoPlayer.css';
+// If you have a config file for API_BASE_URL, import it.
+// Otherwise, you can remove this line or define your base URL.
 import { API_BASE_URL } from '../../config';
 
 export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
   const videoRef = useRef(null);
   const audioRef = useRef(null);
+
+  // We'll track the old articleUrl to decide if we should reset.
+  const oldArticleUrlRef = useRef(null);
+
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [error, setError] = useState(null);
 
-  // Reset state when videoData changes
+  useImperativeHandle(ref, () => ({
+    forcePlay() {
+      if (!isMuted && audioRef.current) {
+        audioRef.current
+          .play()
+          .catch(err => console.error('forcePlay error:', err));
+      }
+    },
+  }));
+
+  // Only reset index if the articleUrl changed:
   useEffect(() => {
-    setIsVideoLoaded(false);
-    setError(null);
-    setCurrentChunkIndex(0);
+    if (!oldArticleUrlRef.current || oldArticleUrlRef.current !== videoData.articleUrl) {
+      // reset to chunk 0 if it's a brand-new article
+      setIsVideoLoaded(false);
+      setError(null);
+      setCurrentChunkIndex(0);
+    }
+    oldArticleUrlRef.current = videoData.articleUrl;
   }, [videoData]);
 
-  // Handle video loading and autoplay
+  // Autoplay logic
   useEffect(() => {
     const video = videoRef.current;
-    video.defaultMuted = true;
     if (!video) return;
+
+    // Ensure video is muted by default so mobile allows autoplay
+    video.defaultMuted = true;
 
     const handleCanPlay = async () => {
       console.log('Video can play');
@@ -48,7 +70,7 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
     };
   }, [videoData.videoUrl]);
 
-  // Handle audio completion to move to next chunk or loop
+  // Move to next chunk (or loop) when current audio ends
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -57,7 +79,7 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
       if (currentChunkIndex < videoData.chunks.length - 1) {
         setCurrentChunkIndex(prev => prev + 1);
       } else {
-        // Reset to beginning when last chunk finishes
+        // If we've hit the last chunk, go back to 0
         setCurrentChunkIndex(0);
         if (videoRef.current) {
           videoRef.current.currentTime = 0;
@@ -66,53 +88,45 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
     };
 
     audio.addEventListener('ended', handleAudioEnd);
-    return () => audio.removeEventListener('ended', handleAudioEnd);
+    return () => {
+      audio.removeEventListener('ended', handleAudioEnd);
+    };
   }, [currentChunkIndex, videoData.chunks]);
 
-  // Load audio for current chunk
+  // Whenever currentChunkIndex or isMuted changes, load the appropriate audio
   useEffect(() => {
-    if (audioRef.current && videoData.chunks[currentChunkIndex]) {
-      const audioUrl = videoData.chunks[currentChunkIndex].audioUrl;
-      // Ensure audioUrl is absolute
-      const fullAudioUrl = audioUrl.startsWith('http')
-        ? audioUrl
-        : `${API_BASE_URL}${audioUrl}`;
+    if (!audioRef.current || !videoData.chunks[currentChunkIndex]) return;
 
-      console.log('Loading audio URL:', fullAudioUrl);
-      audioRef.current.src = fullAudioUrl;
+    let audioUrl = videoData.chunks[currentChunkIndex].audioUrl;
+    if (!audioUrl.startsWith('http')) {
+      audioUrl = `${API_BASE_URL}${audioUrl}`;
+    }
 
-      if (!isMuted) {
-        audioRef.current.play().catch(err => {
-          console.error('Audio play error:', err);
-          setError(`Failed to play audio: ${err.message}`);
-        });
-      }
+    console.log('Loading audio URL:', audioUrl);
+    audioRef.current.src = audioUrl;
+
+    // Only autoplay audio if not muted
+    if (!isMuted) {
+      audioRef.current.play().catch(err => {
+        console.error('Audio play error:', err);
+        setError(`Failed to play audio: ${err.message}`);
+      });
     }
   }, [currentChunkIndex, videoData.chunks, isMuted]);
-
-  useEffect(() => {
-    console.log('Video URL:', videoData.videoUrl);
-    console.log('Video element:', videoRef.current);
-    
-    const video = videoRef.current;
-    if (video) {
-      video.addEventListener('loadstart', () => console.log('Video loadstart'));
-      video.addEventListener('loadedmetadata', () => console.log('Video loadedmetadata'));
-      video.addEventListener('loadeddata', () => console.log('Video loadeddata'));
-    }
-  }, [videoData.videoUrl]);
 
   const handleToggleMute = async () => {
     try {
       if (isMuted) {
+        // if user unmutes, play audio immediately
         await audioRef.current.play();
         onMuteToggle(false);
       } else {
+        // if user mutes, pause audio
         audioRef.current.pause();
         onMuteToggle(true);
       }
-    } catch (error) {
-      console.error('Toggle mute error:', error);
+    } catch (err) {
+      console.error('Toggle mute error:', err);
       setError('Failed to toggle audio');
     }
   };
@@ -123,7 +137,7 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
       videoUrl: videoData.videoUrl,
       mediaError: videoRef.current?.error
     });
-    
+
     const errorMessage = videoRef.current?.error?.message 
       ? `Unable to load video: ${videoRef.current.error.message}`
       : `Unable to load video. Please try refreshing the page. (${videoData.videoUrl})`;
