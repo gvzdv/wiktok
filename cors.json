@@ -1,0 +1,8 @@
+[
+    {
+      "origin": ["https://wiktok-398449484807.us-central1.run.app", "https://wiktok.lol", "https://www.wiktok.lol"],
+      "method": ["GET", "HEAD", "OPTIONS"],
+      "responseHeader": ["Content-Type", "Range"],
+      "maxAgeSeconds": 3600
+    }
+  ]

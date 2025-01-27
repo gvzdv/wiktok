@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -11,6 +11,7 @@ import os
 import random
 import wikipedia
 from prompt import PROMPT
+
 load_dotenv()
 
 app = FastAPI()
@@ -18,7 +19,7 @@ app = FastAPI()
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://wiktok-398449484807.us-central1.run.app"],
+    allow_origins=["http://localhost:3000", "https://wiktok-398449484807.us-central1.run.app", "https://storage.googleapis.com/wiktok-videos"],
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods
     allow_headers=["*"],  # Allows all headers
@@ -42,7 +43,27 @@ audio_dir = os.path.join(os.path.dirname(__file__), "static/audio")
 if not os.path.exists(audio_dir):
     os.makedirs(audio_dir, exist_ok=True)
 
-VIDEOS = []
+VIDEOS = [
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part1.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part2.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part3.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part4.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part5.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part6.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part7.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part8.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part9.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part10.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part11.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part12.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part13.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part14.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part15.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part16.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part17.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part18.mp4",
+    "https://storage.googleapis.com/wiktok-videos/brainrot_part19.mp4",
+]
 
 for file in os.listdir(video_dir):
     if file.endswith(('.mp4', '.webm', '.mov')):
@@ -65,10 +86,6 @@ def get_next_content():
         if not audio_url.startswith('/static/'):
             audio_url = f'/static/{audio_url}'
         audio_files.append(audio_url)
-
-    # Ensure video URL starts with /static/
-    if not video_url.startswith('/static/'):
-        video_url = f'/static/{video_url}'
 
     response = {
         "videoUrl": video_url,
@@ -109,12 +126,7 @@ def get_random_wikipedia_article():
                 title = page.title
                 text = page.content
                 article_url = page.url
-                # article_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
-                print(f"Selected article: {title}")
-                print(f"Article URL: {article_url}")
-                # print(f"Text: {text}")
             except Exception as e:
-                print(f"DisambiguationError")
                 return get_random_wikipedia_article()
 
             return title, text, article_url
@@ -202,35 +214,3 @@ async def serve_react(full_path: str):
     elif os.path.exists(f"frontend_build/{full_path}"):
         return FileResponse(f"frontend_build/{full_path}")
     return FileResponse("frontend_build/index.html")
-
-@app.get("/debug/static-files")
-async def debug_static_files():
-    """Debug endpoint to check static file paths"""
-    video_files = os.listdir(video_dir)
-    audio_files = os.listdir(audio_dir)
-    return {
-        "video_dir": video_dir,
-        "audio_dir": audio_dir,
-        "videos": video_files,
-        "audio": audio_files,
-        "working_dir": os.getcwd(),
-    }
-
-# def test(id = 5289531):
-    
-#     wikipedia.set_lang("en")
-#     print("Starting...")
-#     try:
-#         page = wikipedia.page(pageid=id)
-#         title = page.title
-#         text = page.content
-
-#         article_url = f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"
-#         print(f"Selected article: {title}")
-#         print(f"Article URL: {article_url}")
-#         print(f"Text: {text}")
-#     except wikipedia.exceptions.DisambiguationError as e:
-#         print(f"DisambiguationError: {e}")
-#         test(id=18630637)
-
-# test()

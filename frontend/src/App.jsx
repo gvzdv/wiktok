@@ -4,8 +4,6 @@ import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
 import { getNextContent } from './services/api';
 import './App.css';
 
-const API_BASE_URL = 'https://wiktok-398449484807.us-central1.run.app/';
-
 function App() {
   const [contentList, setContentList] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -91,10 +89,8 @@ function App() {
   const currentContent = contentList[currentIndex];
   console.log('Rendering content:', currentContent);
 
-  // Ensure the video URL is absolute
-  const videoUrl = currentContent.videoUrl.startsWith('http')
-    ? currentContent.videoUrl
-    : `${API_BASE_URL}${currentContent.videoUrl.startsWith('/') ? '' : '/'}${currentContent.videoUrl}`;
+  // Video URLs are already absolute GCS URLs, no need to modify
+  const videoUrl = currentContent.videoUrl;
 
   // Touch-based swipe
   const handleTouchStart = (e) => setTouchStartY(e.touches[0].clientY);

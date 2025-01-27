@@ -104,10 +104,12 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
     try {
       if (isMuted) {
         // user unmuting
+        videoRef.current.muted = false;
         await audioRef.current.play();
         onMuteToggle(false);
       } else {
         // user muting
+        videoRef.current.muted = true;
         audioRef.current.pause();
         onMuteToggle(true);
       }
@@ -147,7 +149,6 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
         src={videoData.videoUrl}
         className="video-player"
         loop
-        muted
         playsInline
         autoPlay
         webkit-playsinline="true"
@@ -155,6 +156,7 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
         preload="auto"
         crossOrigin="anonymous"
         onError={handleVideoError}
+        muted={isMuted}
       />
 
       <audio ref={audioRef} onError={handleAudioError} />
@@ -162,6 +164,8 @@ export function VideoPlayer({ videoData, isMuted, onMuteToggle }) {
       {/* Small "tap to unmute/mute" notice */}
       <div className="tap-reminder">
         Tap anywhere to {isMuted ? 'unmute' : 'mute'}
+        <br />
+        Swipe up for next video
       </div>
 
       <div className="subtitle-overlay">

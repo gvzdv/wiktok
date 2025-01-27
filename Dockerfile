@@ -29,9 +29,6 @@ COPY backend/ .
 # Copy the built React files
 COPY --from=build-frontend /app/frontend/build ./frontend_build
 
-# Copy static content if it exists
-COPY videos/* static/video/
-
 # Set proper permissions
 RUN chmod -R 777 /app
 
