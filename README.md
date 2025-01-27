@@ -1,6 +1,12 @@
+<img src="icon.png" width="150" alt="WikTok Icon"><br>
 # WikTok: 🎥 x 📖
 
 WikTok is a video platform that combines the addictive scrolling experience of TikTok with educational Wikipedia content. It's a fun way to learn random facts while watching short videos!
+
+<img src="demo.gif" width="300" alt="WikTok Demo"><br>
+
+## Try it out: [wiktok.lol](https://wiktok.lol)
+The initial loading might take a few seconds as the app needs to generate the first summary.
 
 ## How it Works
 
@@ -36,7 +42,9 @@ WikTok is a video platform that combines the addictive scrolling experience of T
 
 ## Project Status
 
-This is a work in progress. You can check out demo videos here:
+This is a demo project with lots of things to improve.<br>
+Feel free to clone it and build harder, better, faster, stronger.
+
 
 ## Credits
 
@@ -44,7 +52,7 @@ Created by [Mike Gvozdev](https://www.linkedin.com/in/mike-gvozdev/)
 
 Background videos:
 - [Minecraft](https://www.youtube.com/watch?v=NX-i0IWl3yg&t)
-- [Subway](https://www.youtube.com/watch?v=i0M4ARe9v0Y)
+- [Subway Surfers](https://www.youtube.com/watch?v=i0M4ARe9v0Y)
 
 Music: [Suno](https://suno.com/)
 
